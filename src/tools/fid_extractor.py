@@ -16,9 +16,8 @@ def main(args: argparse.Namespace) -> None:
         if file.is_file()
     )
 
-    munder_pattern = lambda pattern: scrape_fids(
-        filenames, re.compile(f"({pattern}_{pattern})")
-    )
+    def munder_pattern(pattern: str) -> list[tuple[str, str]]:
+        return scrape_fids(filenames, re.compile(f"({pattern}_{pattern})"))
 
     if args.type == "sewer":
         records = munder_pattern(r"\d{5}MH")
@@ -51,7 +50,9 @@ def main(args: argparse.Namespace) -> None:
         print(f"{num_unique:n} unique facility identifiers.")
 
 
-def scrape_fids(filenames: list[str], fid_regex: re.Pattern) -> list[tuple[str, str]]:
+def scrape_fids(
+    filenames: list[str], fid_regex: re.Pattern[str]
+) -> list[tuple[str, str]]:
     """
     Returns a list of tuples of scraped FIDs and filenames from the input filename list.
 
