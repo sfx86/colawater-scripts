@@ -7,6 +7,9 @@ from typing import assert_never
 
 
 def main(args: argparse.Namespace) -> None:
+    if not (args.output or args.stats):
+        return
+
     args.input = [Path(path) for path in args.input]
     args.output = Path(args.output) if args.output is not None else args.output
 
@@ -16,15 +19,15 @@ def main(args: argparse.Namespace) -> None:
         if file.is_file()
     )
 
-    def munder_pattern(pattern: str) -> list[tuple[str, str]]:
-        return scrape_fids(filenames, re.compile(f"({pattern}_{pattern})"))
+    match args.type:
+        case "sewer":
+            pattern = r"\d{5}MH"
+        case "stormwater":
+            pattern = r"\d{6,8}(DP|IN|MP|NS|OD|\d{2})"
+        case _:
+            assert_never(args.type)
 
-    if args.type == "sewer":
-        records = munder_pattern(r"\d{5}MH")
-    elif args.type == "stormwater":
-        records = munder_pattern(r"\d{6,8}(DP|IN|MP|NS|OD|\d{2})")
-    else:
-        assert_never(args.type)
+    records = scrape_fids(filenames, re.compile(f"({pattern}_{pattern})"))
 
     if args.output:
         with open(args.output, "w") as file:
@@ -93,7 +96,7 @@ def args() -> argparse.Namespace:
         "-o",
         "--output",
         dest="output",
-        help="The output directory in which to place a summary CSV.",
+        help="The output summary file.",
     )
     parser.add_argument(
         "-t",
