@@ -15,3 +15,9 @@ enable_error_code = "ignore-without-code"
 [[tool.mypy.overrides]]
 module = "arcpy.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# there should be typing info as of 4.0.38
+# still doesn't work for some reason
+module = "pyodbc.*"
+ignore_missing_imports = true
