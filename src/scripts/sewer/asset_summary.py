@@ -140,8 +140,8 @@ def main() -> None:
         )
         .group_by("subbasin")
         .agg(
-            length().filter(d().is_between(1, 15)).sum().alias("small"),
             length().filter(d() >= 15).sum().alias("large"),
+            length().filter(d().is_between(1, 15)).sum().alias("small"),
             length().filter(d().is_null() | (d() <= 0)).sum().alias("null/unk"),
         )
         .collect()
