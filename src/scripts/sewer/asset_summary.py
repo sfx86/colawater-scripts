@@ -109,38 +109,20 @@ def SHAPE_Length() -> pl.Expr:
     return pl.col("SHAPE_Length").alias("length")
 
 
-def is_active() -> pl.Expr:
-    return pl.col("ACTIVEFLAG") == True
+def is_active_city() -> pl.Expr:
+    return (pl.col("LIFECYCLESTATUS") == "Active") & (pl.col("OWNEDBY") == 1)
 
 
 def diameter() -> pl.Expr:
+    return pl.col("DIAMETER").alias("diameter")
+
+
+def d() -> pl.Expr:
     return pl.col("diameter")
 
 
-def diameter_filter(category: str) -> pl.Expr:
-    match category:
-        case "small":
-            expr = (
-                diameter()
-                .filter((diameter() < 15) & (diameter() > 0))
-                .alias(category)
-                .sum()
-            )
-        case "large":
-            expr = diameter().filter(diameter() >= 15).alias(category).sum()
-        case "null/unk":
-            expr = (
-                diameter()
-                .filter((diameter().is_null()) | (diameter() == 0))
-                .alias(category)
-                .sum()
-            )
-        case _:
-            raise ValueError(
-                f"Expected 'small', 'large', or 'null/unk'. Got '{category}'"
-            )
-
-    return expr
+def length() -> pl.Expr:
+    return pl.col("length")
 
 
 def main() -> None:
@@ -150,22 +132,22 @@ def main() -> None:
     ps_lf = pl.scan_csv(INPUTS["ps"])
 
     gm_df = (
-        gm_lf.filter(is_active())
+        gm_lf.filter(is_active_city())
         .select(
-            pl.col("DIAMETER").alias("diameter"),
+            diameter(),
             subbasin(),
             Shape_Length(),
         )
         .group_by("subbasin")
         .agg(
-            diameter_filter("small"),
-            diameter_filter("large"),
-            diameter_filter("null/unk"),
+            length().filter(d().is_between(1, 15)).sum().alias("small"),
+            length().filter(d() >= 15).sum().alias("large"),
+            length().filter(d().is_null() | (d() <= 0)).sum().alias("null/unk"),
         )
         .collect()
     )
     mh_df = (
-        mh_lf.filter(is_active())
+        mh_lf.filter(is_active_city())
         .select(subbasin())
         .group_by("subbasin")
         .count()
@@ -173,7 +155,7 @@ def main() -> None:
         .collect()
     )
     pm_df = (
-        pm_lf.filter(is_active())
+        pm_lf.filter(is_active_city())
         .select(
             subbasin(),
             SHAPE_Length(),
@@ -184,7 +166,7 @@ def main() -> None:
         .collect()
     )
     ps_df = (
-        ps_lf.filter(is_active())
+        ps_lf.filter(is_active_city())
         .select(subbasin())
         .group_by("subbasin")
         .count()
